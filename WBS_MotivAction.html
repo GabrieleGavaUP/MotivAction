@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WBS – MotivAction / Halt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --border: #dde1ea;
+    --border-light: #edf0f5;
+    --text: #1a1d26;
+    --muted: #8a91a8;
+    --accent: #2a52e8;
+
+    --c1: #2a52e8;   /* 1. Definizione */
+    --c2: #e83a2a;   /* 2. Ricerca */
+    --c3: #e86d1a;   /* 3. Fattibilità */
+    --c4: #1a9e52;   /* 4. QFD */
+    --c5: #0f8a8a;   /* 5. Engineering */
+    --c6: #7c3ae8;   /* 6. Costo/Valore */
+    --c7: #c4286e;   /* 7. Rischio */
+    --c8: #1472c4;   /* 8. Business */
+    --c9: #a07a00;   /* 9. Foresight */
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: auto;
+    padding-bottom: 60px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 32px 48px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    flex-wrap: wrap;
+    box-shadow: 0 1px 0 var(--border);
+  }
+  .logo-block { display: flex; flex-direction: column; gap: 4px; }
+  .logo-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .logo-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .logo-title span { color: var(--accent); }
+  .logo-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .header-meta {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .header-meta span {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    padding: 14px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 3px 0;
+  }
+  .legend-item:hover { color: var(--text); }
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    padding: 12px 48px;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #eef1fc;
+  }
+
+  /* ── CANVAS ── */
+  #canvas {
+    padding: 48px;
+    min-width: max-content;
+  }
+
+  /* ── TREE ── */
+  .tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* root node */
+  .root-node {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 0;
+  }
+  .root-box {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    padding: 14px 22px;
+    border-radius: 8px;
+    min-width: 190px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(42,82,232,0.10);
+  }
+  .root-box .node-id {
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 4px;
+  }
+  .root-box .node-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  /* phases row */
+  .phases-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    margin-left: 190px;
+  }
+
+  /* connectors between root and phases */
+  .h-connector {
+    position: absolute;
+    left: -36px;
+    top: 50%;
+    width: 36px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* phase group */
+  .phase-group {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+    min-height: 52px;
+  }
+  .phase-group + .phase-group { margin-top: 0; }
+
+  /* vertical trunk line */
+  .v-trunk {
+    position: absolute;
+    left: -36px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+  .phase-group:first-child .v-trunk { top: 50%; }
+  .phase-group:last-child  .v-trunk { bottom: 50%; }
+
+  /* phase node */
+  .phase-node {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .phase-h-line {
+    width: 36px;
+    height: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .phase-box {
+    border: 1.5px solid;
+    padding: 10px 40px 10px 16px;
+    border-radius: 7px;
+    min-width: 230px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s, box-shadow 0.15s;
+    user-select: none;
+    background: var(--surface);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .phase-box:hover {
+    transform: translateX(3px);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.10);
+  }
+  .phase-box .node-id {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    opacity: 0.7;
+    margin-bottom: 3px;
+  }
+  .phase-box .node-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .phase-box .toggle-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    opacity: 0.35;
+    transition: transform 0.2s, opacity 0.2s;
+    color: var(--text);
+  }
+  .phase-box.open .toggle-icon {
+    transform: translateY(-50%) rotate(90deg);
+    opacity: 0.7;
+  }
+
+  /* sub-tasks */
+  .subtasks {
+    display: none;
+    flex-direction: column;
+    margin-left: 36px;
+    position: relative;
+  }
+  .subtasks.open { display: flex; }
+
+  .task-group {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+    min-height: 44px;
+  }
+  .task-v-trunk {
+    position: absolute;
+    left: 0;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+  .task-group:first-child .task-v-trunk { top: 50%; }
+  .task-group:last-child  .task-v-trunk { bottom: 50%; }
+
+  .task-node {
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+  .task-h-line {
+    width: 30px; height: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .task-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    padding: 7px 36px 7px 14px;
+    border-radius: 5px;
+    min-width: 270px;
+    max-width: 330px;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .task-box:hover {
+    background: #f8f9fc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .task-box .node-id {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    opacity: 0.55;
+    margin-bottom: 2px;
+  }
+  .task-box .node-name {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .task-box .toggle-icon {
+    position: absolute;
+    right: 10px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    opacity: 0.3;
+    transition: transform 0.2s;
+    color: var(--text);
+  }
+  .task-box.open .toggle-icon {
+    transform: translateY(-50%) rotate(90deg);
+    opacity: 0.6;
+  }
+
+  /* leaf tasks (deliverables) */
+  .leaves {
+    display: none;
+    flex-direction: column;
+    margin-left: 30px;
+    position: relative;
+  }
+  .leaves.open { display: flex; }
+
+  .leaf-group {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+    min-height: 34px;
+  }
+  .leaf-v-trunk {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 1px;
+    background: var(--border-light);
+  }
+  .leaf-group:first-child .leaf-v-trunk { top: 50%; }
+  .leaf-group:last-child  .leaf-v-trunk { bottom: 50%; }
+  .leaf-node { display: flex; align-items: center; position: relative; z-index: 2; }
+  .leaf-h-line { width: 24px; height: 1px; background: var(--border-light); flex-shrink: 0; }
+  .leaf-box {
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    min-width: 210px;
+    max-width: 290px;
+    line-height: 1.4;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .leaf-box:hover {
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  /* ── TOOLTIP ── */
+  .tooltip {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 9px 13px;
+    font-size: 10px;
+    color: var(--muted);
+    max-width: 250px;
+    line-height: 1.6;
+    border-radius: 5px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 999;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  }
+  .tooltip.show { opacity: 1; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 36px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 48px;
+    gap: 24px;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+  footer span { color: var(--muted); }
+  footer .sep { opacity: 0.4; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    header, .legend, .controls, #canvas { padding: 20px; }
+    .phases-row { margin-left: 150px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <span class="logo-eyebrow">Work Breakdown Structure</span>
+    <div class="logo-title">Motiv<span>Action</span></div>
+    <div class="logo-subtitle">Progetto Halt — MindSpark · UniPi 2025–26</div>
+  </div>
+  <div class="header-meta">
+    <span>Prof. G. Fantoni · Prof.ssa A. Martini</span>
+    <span>J. Cinelli · A. Mancuso · N. Falaschi · S. Amadi · G. Gavazzi</span>
+  </div>
+</header>
+
+<div class="legend" id="legend"></div>
+
+<div class="controls">
+  <button class="btn" onclick="expandAll()">Espandi tutto</button>
+  <button class="btn" onclick="collapseAll()">Comprimi tutto</button>
+</div>
+
+<div id="canvas">
+  <div class="tree" id="tree"></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<footer>
+  <span>WBS · MotivAction</span>
+  <span class="sep">|</span>
+  <span id="count-phases"></span>
+  <span class="sep">|</span>
+  <span id="count-tasks"></span>
+  <span class="sep">|</span>
+  <span>Clicca sui nodi per espandere</span>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════ */
+const WBS = {
+  id: "0",
+  name: "MotivAction / Halt",
+  phases: [
+    {
+      id: "1",
+      name: "Definizione del Progetto",
+      color: "var(--c1)",
+      desc: "Perimetrazione del problema, definizione degli scope e strumenti di gestione.",
+      tasks: [
+        {
+          id: "1.1", name: "Analisi Etimologica & Letteratura",
+          desc: "Revisione di 4 opere fondamentali sulla motivazione (Lewin, Deci, Kuhl, Blaskova).",
+          leaves: ["1.1.1 Lettura testi fondamentali", "1.1.2 Analisi Scopus con RStudio (59.617 articoli)", "1.1.3 Definizione operativa di motivazione"]
+        },
+        {
+          id: "1.2", name: "Scope 0 – Perimetrazione iniziale",
+          desc: "Definizione del confine progettuale a partire dalla definizione di motivazione.",
+          leaves: ["1.2.1 Redazione Scope Statement", "1.2.2 Definizione out-of-scope", "1.2.3 Project Scope 0.docx"]
+        },
+        {
+          id: "1.3", name: "Strumenti di Gestione",
+          desc: "Pianificazione operativa con WBS, RACI e strumenti digitali (Teams, Drive, Lucidchart).",
+          leaves: ["1.3.1 Work Breakdown Structure", "1.3.2 Matrice RACI", "1.3.3 Setup ambienti di lavoro (Teams, Drive, Python, R)"]
+        }
+      ]
+    },
+    {
+      id: "2",
+      name: "Ricerca delle Opportunità",
+      color: "var(--c2)",
+      desc: "Analisi macroambiente, mappatura del processo di studio e identificazione dei failure.",
+      tasks: [
+        {
+          id: "2.1", name: "Analisi PESTL",
+          desc: "Fattori Politici, Economici, Sociali, Tecnologici e Legali nel settore Education italiano.",
+          leaves: ["2.1.1 Fattori Politici (FFO, metodologie attive)", "2.1.2 Fattori Economici (TAM 800k studenti)", "2.1.3 Fattori Sociali (ansia, dispersione)", "2.1.4 Fattori Tecnologici (topic modeling OpenAlex)", "2.1.5 Fattori Legali (AI Act, GDPR, DSA)"]
+        },
+        {
+          id: "2.2", name: "Mappatura del Processo di Studio",
+          desc: "Processo ideale in 3 lane (Forethought, Performance, Self-Reflection) basato su 7 framework scientifici.",
+          leaves: ["2.2.1 Framework teorici (Zimmerman, Bjork, Sweller, Craik)", "2.2.2 Lane 1 – Forethought", "2.2.3 Lane 2 – Performance", "2.2.4 Lane 3 – Self-Reflection", "2.2.5 Diagramma di flusso (Lucidchart)"]
+        },
+        {
+          id: "2.3", name: "Analisi PFMECA (processo di studio)",
+          desc: "Identificazione dei nodi critici del processo: Deep Encoding, Self-Observation, Attention Monitoring.",
+          leaves: ["2.3.1 Griglia di valutazione (S, O, D, M)", "2.3.2 Applicazione ai 14 task", "2.3.3 Risultati: Top 3 nodi critici", "2.3.4 PFMECA_Scope.xlsx"]
+        },
+        {
+          id: "2.4", name: "Analisi Reddit (Catene Causali)",
+          desc: "Pipeline NLP su 9.411 post universitari: sentiment analysis, estrazione causale, clustering semantico.",
+          leaves: ["2.4.1 Raccolta corpus (9.411 post)", "2.4.2 Sentence splitting (83.722 frasi)", "2.4.3 Sentiment analysis (36% negativo)", "2.4.4 Estrazione cause con spaCy/regex", "2.4.5 10 cluster semantici (Sentence-BERT)", "2.4.6 analisi_reddit.Rmd + reddit_9k.csv"]
+        },
+        {
+          id: "2.5", name: "Incrocio PFMECA × Reddit",
+          desc: "Verifica convergenza: Deep Encoding 336 cause, Self-Observation 279, Attention Monitoring 265.",
+          leaves: ["2.5.1 Mappatura cluster → task", "2.5.2 Loop Motivazionale Negativo", "2.5.3 cluster_catene_causa-effetto.xlsx"]
+        },
+        {
+          id: "2.6", name: "Opportunità di Mercato",
+          desc: "Formulazione dell'opportunità: studenti che faticano a vuoto per metodo inefficace, non per pigrizia.",
+          leaves: ["2.6.1 Sintesi dell'opportunità", "2.6.2 Scope 1 – Restrizione del perimetro"]
+        }
+      ]
+    },
+    {
+      id: "3",
+      name: "Analisi di Fattibilità",
+      color: "var(--c3)",
+      desc: "Generazione di 3 soluzioni candidate e selezione di Halt come soluzione fattibile.",
+      tasks: [
+        {
+          id: "3.1", name: "Bisogni & Requisiti",
+          desc: "3 bisogni operativi dai meccanismi critici: Attention Monitoring, Deep Encoding, Self-Observation.",
+          leaves: ["3.1.1 Requisito Attention Monitoring", "3.1.2 Requisito Deep Encoding", "3.1.3 Requisito Self-Observation"]
+        },
+        {
+          id: "3.2", name: "3 Soluzioni Candidate",
+          desc: "Study Triage, Halt e Socrates — progettate con massima ortogonalità.",
+          leaves: ["3.2.1 Study Triage (check-in temporali)", "3.2.2 Halt (blocco lettura + LLM Q&A)", "3.2.3 Socrates (dialogo vocale metodo Feynman)"]
+        },
+        {
+          id: "3.3", name: "Valutazione Fattibilità",
+          desc: "Valutazione su 3 dimensioni: tecnologica, economica, legale.",
+          leaves: ["3.3.1 Fattibilità Tecnologica", "3.3.2 Fattibilità Economica", "3.3.3 Fattibilità Legale (GDPR, AI Act)", "3.3.4 Selezione: Halt ✓"]
+        },
+        {
+          id: "3.4", name: "Scope 2 – Halt",
+          desc: "Scope Statement definitivo: Halt come sistema di active recall su materiale digitale con mappa di padronanza.",
+          leaves: ["3.4.1 Scope Statement Halt", "3.4.2 Out-of-scope Halt", "3.4.3 Project_Scope_2.docx"]
+        }
+      ]
+    },
+    {
+      id: "4",
+      name: "Quality Function Deployment",
+      color: "var(--c4)",
+      desc: "House of Quality completa: voce del cliente → CTQ → specifiche di prodotto.",
+      tasks: [
+        {
+          id: "4.1", name: "Stanza 1 – Voce del Cliente",
+          desc: "15 interviste + Diagramma di Affinità + Kano (53 risposte) → 6 bisogni pesati.",
+          leaves: ["4.1.1 Traccia intervista (5 sezioni)", "4.1.2 15 interviste individuali", "4.1.3 Diagramma di Affinità (7 macro-categorie)", "4.1.4 Questionario Kano (53 risposte)", "4.1.5 6 bisogni con importanza relativa"]
+        },
+        {
+          id: "4.2", name: "Stanza 2 – CTQ",
+          desc: "7 Critical-to-Quality identificati con direzione ottimale (↑/↓/◎) e riferimento alla tassonomia di Bloom.",
+          leaves: ["4.2.1 CTQ1 – Interruzione nei punti dichiarati ↑", "4.2.2 CTQ2 – Feedback nei momenti dichiarati ↑", "4.2.3 CTQ3 – Progressione tassonomica ↑", "4.2.4 CTQ4 – Coerenza feedback ↑", "4.2.5 CTQ5 – Coinvolgimento attivo ↑", "4.2.6 CTQ6 – Accuratezza tassonomica ↑", "4.2.7 CTQ7 – Calibrazione carico cognitivo ◎"]
+        },
+        {
+          id: "4.3", name: "Stanze 3–6 – Matrici HOQ",
+          desc: "Matrice relazioni, benchmarking cliente (53 risposte), tetto HOQ (7 correlazioni positive, 0 negative).",
+          leaves: ["4.3.1 Stanza 3 – Matrice relazioni", "4.3.2 Stanza 4 – Benchmarking percepito (4 competitor)", "4.3.3 Stanza 5 – Benchmarking rilevazioni aziendali", "4.3.4 Stanza 6 – Tetto HOQ"]
+        },
+        {
+          id: "4.4", name: "Stanze 7–8 – Priorità & Specifiche",
+          desc: "Importanza relativa CTQ (formula Lyman) + specifiche di prodotto con target misurabili.",
+          leaves: ["4.4.1 Stanza 7 – Importanza CTQ (Coinvolgimento 21,9% #1)", "4.4.2 Stanza 8 – Specifiche (es. CTQ5 = 100% open-ended)", "4.4.3 QFD.xlsx"]
+        }
+      ]
+    },
+    {
+      id: "5",
+      name: "Engineering Solutions",
+      color: "var(--c5)",
+      desc: "Architettura Halt in 5 componenti + flusso di sistema.",
+      tasks: [
+        {
+          id: "5.1", name: "M1 – Document Processor",
+          desc: "Parsing PDF, OCR, estrazione formule (Mathpix), descrizione immagini (VLM). Input unico per documento.",
+          leaves: ["5.1.1 Stadio 1 – Google Document AI (layout)", "5.1.2 Stadio 2 – Estrazione per tipo (testo/OCR/formula/immagine)", "5.1.3 Stadio 3 – Segmentazione (TOC / chunk / fallback utente)", "5.1.4 Stadio 4 – Assegnazione segment_id e topic_id"]
+        },
+        {
+          id: "5.2", name: "M2 – Session & Progression Manager",
+          desc: "Gestisce tutto lo stato del sistema: interruption_id, TARGET Bloom, aggiornamento contatore.",
+          leaves: ["5.2.1 Costruzione interruption_id", "5.2.2 State machine sessione", "5.2.3 Logica Delta +/−1 (soglia adattiva)", "5.2.4 Persistenza stato tra sessioni"]
+        },
+        {
+          id: "5.3", name: "M3 – Stimulus Generator",
+          desc: "Genera domande aperte al livello TARGET con prompt PS4 (CoT + Bloom + esempio). Formula adattiva C2-5.",
+          leaves: ["5.3.1 Conteggio concetti (chiamata LLM preliminare)", "5.3.2 Formula domande (floor 1, cap 26)", "5.3.3 Prompt PS4 (CoT + Bloom + esempio)", "5.3.4 Pre-validazione accuratezza tassonomica ≥85%"]
+        },
+        {
+          id: "5.4", name: "M4 – Evaluator",
+          desc: "3 modalità: valutazione per-domanda → aggregazione segnale → generazione feedback con G-Eval.",
+          leaves: ["5.4.1 Modalità 1 – Valutazione per-domanda (batch)", "5.4.2 Modalità 2 – Aggregazione segnale >80/60-80/<60", "5.4.3 Modalità 3 – Feedback G-Eval (soglia ≥3.5, 3 tentativi)"]
+        },
+        {
+          id: "5.5", name: "UI/UX – Interfaccia",
+          desc: "Upload PDF, configurazione sessione, oscuramento condizionale, stelline, dashboard fine sessione.",
+          leaves: ["5.5.1 Upload PDF e configurazione", "5.5.2 Rendering PDF con oscuramento", "5.5.3 Raccolta risposte (formato aperto)", "5.5.4 Stelline real-time + dashboard"]
+        },
+        {
+          id: "5.6", name: "Architettura di Sistema",
+          desc: "Flusso completo upload → Document Processor → Manager → Stimulus → Evaluator → feedback.",
+          leaves: ["5.6.1 Diagramma di flusso Halt (Fig. 3)", "5.6.2 Definizione interfacce tra componenti", "5.6.3 Scelta stack (Railway + GCS + OpenAI)"]
+        }
+      ]
+    },
+    {
+      id: "6",
+      name: "Analisi Costo / Valore",
+      color: "var(--c6)",
+      desc: "Stima TCO, Matrice del Valore e analisi di Tanaka per ogni componente.",
+      tasks: [
+        {
+          id: "6.1", name: "Stima dei Costi",
+          desc: "Sviluppo (647h @ €19.8/h), Servizio (API + infrastruttura), Manutenzione (20% dev). TCO €117.218.",
+          leaves: ["6.1.1 Costi sviluppo per componente (647h totali)", "6.1.2 LLM API – 9 user personas (€1.514/mese)", "6.1.3 VLM – €867/mese", "6.1.4 OCR Google Vision – €1.484/mese", "6.1.5 Google Document AI – €4.238/mese", "6.1.6 Mathpix – €282/mese (solo STEM)", "6.1.7 Infrastruttura Railway + GCS – €102/mese", "6.1.8 Manutenzione 20% dev – €2.162/anno"]
+        },
+        {
+          id: "6.2", name: "Matrice del Valore",
+          desc: "CTQ × componenti → valore relativo. M3 Stimulus Generator: 33.3% valore con 9.6% costo.",
+          leaves: ["6.2.1 Incrocio CTQ × 5 componenti", "6.2.2 Punteggi (forte/medio/debole)", "6.2.3 Valore relativo per componente"]
+        },
+        {
+          id: "6.3", name: "Analisi di Tanaka",
+          desc: "M1 sopra la bisettrice (74% costo, 15.5% valore) → ricerca alternative a Google Doc AI.",
+          leaves: ["6.3.1 Grafico Tanaka (Fig. 4)", "6.3.2 M1: azione riduzione costi API documentale", "6.3.3 Matrice_Costo_e_Valore_Tanaka.xlsx"]
+        }
+      ]
+    },
+    {
+      id: "7",
+      name: "Analisi e Gestione del Rischio",
+      color: "var(--c7)",
+      desc: "PFMECA su Halt: 63 modi di guasto, 6 in fascia Alto con azioni di intervento.",
+      tasks: [
+        {
+          id: "7.1", name: "Analisi Funzionale",
+          desc: "36 funzioni elementari identificate (Upload PDF → Store Feedback Variable).",
+          leaves: ["7.1.1 Mappa funzionale Halt", "7.1.2 Tabella 36 funzioni (Tabella 28)"]
+        },
+        {
+          id: "7.2", name: "Identificazione Modi di Guasto",
+          desc: "63 modi di guasto: 36 perdite di funzione + 27 funzionamenti degradati.",
+          leaves: ["7.2.1 Perdita di funzione (36)", "7.2.2 Funzionamento degradato (27)", "7.2.3 PFMECA_Halt.xlsx"]
+        },
+        {
+          id: "7.3", name: "Misura del Rischio (RPN)",
+          desc: "RPN sistema e utente. Soglie: Alto >250, Medio 100-250, Basso ≤100.",
+          leaves: ["7.3.1 Scale S, O, D (1-10)", "7.3.2 6 modi Alto, 13 Medio, 44 Basso", "7.3.3 RPN doppio (sistema vs utente)"]
+        },
+        {
+          id: "7.4", name: "Azioni di Intervento (Top 6)",
+          desc: "Interventi su 6 modi in fascia Alto, ordinati per RPN decrescente.",
+          leaves: ["7.4.1 Testo OCR con errori (RPN 392) → soglia confidence score", "7.4.2 Formula MathPix errata (RPN 336) → soglia confidence", "7.4.3 Giudizio valutazione incoerente (RPN 336) → rubrica + temp", "7.4.4 VLM allucinata (RPN 320) → miglioramento prompt", "7.4.5 Domande livello Bloom errato (RPN 280) → CoT dichiarativo", "7.4.6 G-Eval non discriminante (RPN 288) → sostituzione con BERT"]
+        }
+      ]
+    },
+    {
+      id: "8",
+      name: "Business Model & Plan",
+      color: "var(--c8)",
+      desc: "Analisi competitor, pricing, modelli di acquisizione, P&L quinquennale e investitori.",
+      tasks: [
+        {
+          id: "8.1", name: "Analisi Competitor & Pricing",
+          desc: "4 competitor diretti (Remnote, Quizlet, StudySmarter, Readwise). Price range €5.52–€11.95.",
+          leaves: ["8.1.1 Competitor diretti (4)", "8.1.2 Competitor indiretti (AI gen, NotebookLM, Anki)", "8.1.3 Price Ceiling €5.52 / Floor €2.83"]
+        },
+        {
+          id: "8.2", name: "Analisi Modelli di Business",
+          desc: "Confronto Free Trial no carta vs con carta vs Freemium su 3 fasce di prezzo.",
+          leaves: ["8.2.1 Free Trial no carta → +€55.140 @ €4.99 (3 mesi)", "8.2.2 Free Trial con carta → +€49.823 @ €4.99 (3 mesi)", "8.2.3 Freemium → perdita a tutte le fasce", "8.2.4 Scelta: Free Trial no carta @ €4.99 → €5.99"]
+        },
+        {
+          id: "8.3", name: "Costo di Acquisizione Traffico",
+          desc: "Free trial con carta richiede 3.4x visitatori a parità di iscritti → +€921.600 marketing.",
+          leaves: ["8.3.1 CPC Meta Ads 2026 Italy (€0.96/click)", "8.3.2 Confronto reach: 400k vs 1.36M visitatori", "8.3.3 Conferma scelta Free Trial no carta"]
+        },
+        {
+          id: "8.4", name: "Business Plan Quinquennale",
+          desc: "Crescita utenti (logistica Rogers), team 7→13, P&L Y1–Y5, breakeven ~Y3.",
+          leaves: ["8.4.1 Funnel acquisizione (curva logistica Rogers)", "8.4.2 Team e organizzazione (Y1=7, Y5=13)", "8.4.3 P&L: Ricavi €74k Y1 → €2.17M Y5", "8.4.4 Operating margin Y5: 35.6%", "8.4.5 Fabbisogno round pre-seed €150k–€250k", "8.4.6 Potenziali investitori (Vento, Zanichelli, Brighteye)"]
+        }
+      ]
+    },
+    {
+      id: "9",
+      name: "Foresight Strategico",
+      color: "var(--c9)",
+      desc: "Analisi scenaristica 2026–2036 in 10 fasi: STEEP scanning, scenario building, immersione strategica, visioning e roadmapping.",
+      tasks: [
+        {
+          id: "9.1", name: "Framing",
+          desc: "Focus: evoluzione dell'apprendimento universitario italiano 2026–2036. Orizzonte 10 anni, confini geografici Italia.",
+          leaves: ["9.1.1 Focal issue definita", "9.1.2 Confini geografici (Italia)", "9.1.3 Orizzonte temporale 2026–2036"]
+        },
+        {
+          id: "9.2", name: "Horizon Scanning STEEP",
+          desc: "Scanning in due fasi (individuale + Claude AI / prompt Robiati). 39 driving forces identificate su 5 dimensioni.",
+          leaves: [
+            "9.2.1 Social – 10 forze (S1–S10)",
+            "9.2.2 Technological – 10 forze (T1–T10)",
+            "9.2.3 Economic – 8 forze (E1–E8)",
+            "9.2.4 Environmental – 5 forze (EN1–EN5)",
+            "9.2.5 Political – 6 forze (P1–P6)"
+          ]
+        },
+        {
+          id: "9.3", name: "Impact / Uncertainty Ranking",
+          desc: "Posizionamento delle 39 forze nella matrice impatto/incertezza per classificarle in megatrend, forze secondarie, wild card e incertezze critiche.",
+          leaves: [
+            "9.3.1 Assegnazione punteggi impatto (1–10) e incertezza (1–10)",
+            "9.3.2 Matrice impatto/incertezza (quadranti)",
+            "9.3.3 Classificazione forze: megatrend, secondarie, wild card, critiche"
+          ]
+        },
+        {
+          id: "9.4", name: "Critical Uncertainties",
+          desc: "Selezione delle 2 incertezze critiche con punteggio combinato più elevato: T4 (tutor agentici AI) e S5 (trasformazione cognitiva generazionale).",
+          leaves: [
+            "9.4.1 Selezione T4 – Tutor agentici AI (Impatto 9 | Incertezza 8)",
+            "9.4.2 Selezione S5 – Trasformazione cognitiva generazioni digitali (Impatto 8 | Incertezza 7)",
+            "9.4.3 Polarizzazione agli estremi per costruzione assi scenari"
+          ]
+        },
+        {
+          id: "9.5", name: "Scenario Building",
+          desc: "Combinazione dei 2 assi critici (T4 × S5) in 4 scenari alternativi e plausibili al 2036.",
+          leaves: [
+            "9.5.1 Asse X: diffusione tutor agentici (bassa ↔ alta)",
+            "9.5.2 Asse Y: trasformazione cognitiva (contenuta ↔ profonda)",
+            "9.5.3 Scenario A – Quadrante (alta diffusione AI, trasf. cognitiva profonda)",
+            "9.5.4 Scenario B – Quadrante (alta diffusione AI, trasf. cognitiva contenuta)",
+            "9.5.5 Scenario C – Quadrante (bassa diffusione AI, trasf. cognitiva profonda)",
+            "9.5.6 Scenario D – Quadrante (bassa diffusione AI, trasf. cognitiva contenuta)"
+          ]
+        },
+        {
+          id: "9.6", name: "Scenario Building & Narratives",
+          desc: "Elaborazione delle narrative per ciascuno scenario, con future personas che rendono tangibile il contesto futuro.",
+          leaves: [
+            "9.6.1 Narrative dei 4 scenari",
+            "9.6.2 Future personas per scenario (profilo studente 2036)",
+            "9.6.3 Descrizione del contesto universitario e tecnologico per scenario"
+          ]
+        },
+        {
+          id: "9.7", name: "Scenario Immersion",
+          desc: "Messa alla prova di Halt in ciascuno scenario: identificazione di criticità e opportunità specifiche per prodotto e modello di business.",
+          leaves: [
+            "9.7.1 Halt nello Scenario A – criticità e opportunità",
+            "9.7.2 Halt nello Scenario B – criticità e opportunità",
+            "9.7.3 Halt nello Scenario C – criticità e opportunità",
+            "9.7.4 Halt nello Scenario D – criticità e opportunità"
+          ]
+        },
+        {
+          id: "9.8", name: "Strategizing",
+          desc: "Derivazione delle scelte strategiche robuste e degli adattamenti necessari per Halt a partire dall'analisi trasversale dei 4 scenari.",
+          leaves: [
+            "9.8.1 Identificazione mosse strategiche robuste (valide in tutti gli scenari)",
+            "9.8.2 Identificazione mosse specifiche per scenario",
+            "9.8.3 Segnali precoci da monitorare (early warning)"
+          ]
+        },
+        {
+          id: "9.9", name: "Visioning & Roadmapping",
+          desc: "Costruzione della visione a lungo termine di Halt e roadmap triennale derivata dall'analisi scenaristica.",
+          leaves: [
+            "9.9.1 Visione di Halt al 2036",
+            "9.9.2 Roadmap triennale (Y1–Y3)",
+            "9.9.3 Milestone e indicatori per ciascun anno"
+          ]
+        },
+        {
+          id: "9.10", name: "Conclusioni Foresight",
+          desc: "Sintesi delle implicazioni strategiche del foresight per lo sviluppo e il posizionamento di Halt.",
+          leaves: [
+            "9.10.1 Sintesi incertezze critiche e scenari",
+            "9.10.2 Implicazioni per architettura prodotto",
+            "9.10.3 Implicazioni per modello di business"
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+/* ═══════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════ */
+function buildTree() {
+  const tree = document.getElementById('tree');
+
+  // Root
+  const rootRow = document.createElement('div');
+  rootRow.className = 'root-node';
+  rootRow.innerHTML = `
+    <div class="root-box">
+      <div class="node-id">WBS 0</div>
+      <div class="node-name">${WBS.name}</div>
+    </div>`;
+  tree.appendChild(rootRow);
+
+  // Phases wrapper
+  const phasesRow = document.createElement('div');
+  phasesRow.className = 'phases-row';
+
+  WBS.phases.forEach((phase, pi) => {
+    const phaseGroup = document.createElement('div');
+    phaseGroup.className = 'phase-group';
+
+    // vertical trunk (shared line on left)
+    const vTrunk = document.createElement('div');
+    vTrunk.className = 'v-trunk';
+    phaseGroup.appendChild(vTrunk);
+
+    // phase node
+    const phaseNode = document.createElement('div');
+    phaseNode.className = 'phase-node';
+
+    const hLine = document.createElement('div');
+    hLine.className = 'phase-h-line';
+    phaseNode.appendChild(hLine);
+
+    const phaseBox = document.createElement('div');
+    phaseBox.className = 'phase-box';
+    phaseBox.style.borderColor = phase.color;
+    phaseBox.style.color = phase.color;
+    phaseBox.innerHTML = `
+      <div class="node-id" style="color:${phase.color}">${phase.id}</div>
+      <div class="node-name">${phase.name}</div>
+      <span class="toggle-icon">▶</span>`;
+
+    // subtasks container
+    const subtasks = document.createElement('div');
+    subtasks.className = 'subtasks';
+
+    phase.tasks.forEach((task, ti) => {
+      const taskGroup = document.createElement('div');
+      taskGroup.className = 'task-group';
+
+      const taskVTrunk = document.createElement('div');
+      taskVTrunk.className = 'task-v-trunk';
+      taskGroup.appendChild(taskVTrunk);
+
+      const taskNode = document.createElement('div');
+      taskNode.className = 'task-node';
+
+      const taskHL = document.createElement('div');
+      taskHL.className = 'task-h-line';
+      taskNode.appendChild(taskHL);
+
+      const taskBox = document.createElement('div');
+      taskBox.className = 'task-box';
+      taskBox.style.borderLeftColor = phase.color;
+      taskBox.dataset.desc = task.desc;
+      taskBox.innerHTML = `
+        <div class="node-id" style="color:${phase.color}">${task.id}</div>
+        <div class="node-name">${task.name}</div>
+        ${task.leaves?.length ? '<span class="toggle-icon">▶</span>' : ''}`;
+
+      // leaves
+      let leavesEl = null;
+      if (task.leaves?.length) {
+        leavesEl = document.createElement('div');
+        leavesEl.className = 'leaves';
+        task.leaves.forEach(leaf => {
+          const lg = document.createElement('div');
+          lg.className = 'leaf-group';
+          const lvt = document.createElement('div');
+          lvt.className = 'leaf-v-trunk';
+          lg.appendChild(lvt);
+          const ln = document.createElement('div');
+          ln.className = 'leaf-node';
+          const lhl = document.createElement('div');
+          lhl.className = 'leaf-h-line';
+          const lb = document.createElement('div');
+          lb.className = 'leaf-box';
+          lb.textContent = leaf;
+          ln.appendChild(lhl);
+          ln.appendChild(lb);
+          lg.appendChild(ln);
+          leavesEl.appendChild(lg);
+        });
+        taskBox.addEventListener('click', (e) => {
+          e.stopPropagation();
+          taskBox.classList.toggle('open');
+          leavesEl.classList.toggle('open');
+        });
+      }
+
+      // tooltip
+      taskBox.addEventListener('mouseenter', (e) => showTooltip(e, task.desc));
+      taskBox.addEventListener('mouseleave', hideTooltip);
+      taskBox.addEventListener('mousemove', moveTooltip);
+
+      taskNode.appendChild(taskBox);
+      if (leavesEl) taskNode.appendChild(leavesEl);
+      taskGroup.appendChild(taskNode);
+      subtasks.appendChild(taskGroup);
+    });
+
+    // phase toggle
+    phaseBox.addEventListener('click', () => {
+      phaseBox.classList.toggle('open');
+      subtasks.classList.toggle('open');
+    });
+
+    phaseNode.appendChild(phaseBox);
+    phaseNode.appendChild(subtasks);
+    phaseGroup.appendChild(phaseNode);
+    phasesRow.appendChild(phaseGroup);
+  });
+
+  tree.appendChild(phasesRow);
+}
+
+/* ═══════════════════════════════════════════════════
+   LEGEND
+═══════════════════════════════════════════════════ */
+function buildLegend() {
+  const legend = document.getElementById('legend');
+  WBS.phases.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${p.color}"></div>${p.id}. ${p.name}`;
+    item.addEventListener('click', () => {
+      // scroll to phase
+      const allPhaseBoxes = document.querySelectorAll('.phase-box');
+      const target = [...allPhaseBoxes].find(b => b.querySelector('.node-id')?.textContent?.trim() === p.id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    legend.appendChild(item);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   CONTROLS
+═══════════════════════════════════════════════════ */
+function expandAll() {
+  document.querySelectorAll('.phase-box').forEach(b => b.classList.add('open'));
+  document.querySelectorAll('.subtasks').forEach(s => s.classList.add('open'));
+  document.querySelectorAll('.task-box').forEach(b => b.classList.add('open'));
+  document.querySelectorAll('.leaves').forEach(l => l.classList.add('open'));
+}
+function collapseAll() {
+  document.querySelectorAll('.phase-box').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.subtasks').forEach(s => s.classList.remove('open'));
+  document.querySelectorAll('.task-box').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.leaves').forEach(l => l.classList.remove('open'));
+}
+
+/* ═══════════════════════════════════════════════════
+   TOOLTIP
+═══════════════════════════════════════════════════ */
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, text) {
+  tooltip.textContent = text;
+  tooltip.classList.add('show');
+  moveTooltip(e);
+}
+function hideTooltip() { tooltip.classList.remove('show'); }
+function moveTooltip(e) {
+  tooltip.style.left = (e.clientX + 16) + 'px';
+  tooltip.style.top = (e.clientY + 10) + 'px';
+}
+
+/* ═══════════════════════════════════════════════════
+   FOOTER COUNTS
+═══════════════════════════════════════════════════ */
+function updateCounts() {
+  const phases = WBS.phases.length;
+  const tasks = WBS.phases.reduce((a, p) => a + p.tasks.length, 0);
+  const leaves = WBS.phases.reduce((a, p) => a + p.tasks.reduce((b, t) => b + (t.leaves?.length || 0), 0), 0);
+  document.getElementById('count-phases').textContent = `${phases} fasi`;
+  document.getElementById('count-tasks').textContent = `${tasks} task · ${leaves} deliverable`;
+}
+
+/* INIT */
+buildTree();
+buildLegend();
+updateCounts();
+</script>
+</body>
+</html>
